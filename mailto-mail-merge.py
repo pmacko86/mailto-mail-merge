@@ -153,17 +153,48 @@ Examples:
         if args.message.endswith(".md"):
             message = markdown.markdown(message).replace(">\n<", "><")
 
-    # Prepare the HTML output.
+    # Prepare the HTML output with CSS and JavaScript for click tracking.
     html_lines = [
         "<!DOCTYPE html>",
         "<html>",
-        "<head><meta charset='utf-8'><title>Mail Merge Links</title></head>",
+        "<head>",
+        "<meta charset='utf-8'>",
+        "<title>Mail Merge Links</title>",
+        "<style>",
+        ".clicked { text-decoration: line-through; color: #666; }",
+        ".mailto-item { margin: 10px 0; }",
+        "</style>",
+        "<script>",
+        "function markClicked(element) {",
+        "  element.classList.add('clicked');",
+        "  // Store clicked state in localStorage",
+        "  const clickedLinks = JSON.parse(localStorage.getItem('clickedMailtoLinks') || '[]');",
+        "  const linkId = element.getAttribute('data-link-id');",
+        "  if (!clickedLinks.includes(linkId)) {",
+        "    clickedLinks.push(linkId);",
+        "    localStorage.setItem('clickedMailtoLinks', JSON.stringify(clickedLinks));",
+        "  }",
+        "}",
+        "",
+        "function restoreClickedState() {",
+        "  const clickedLinks = JSON.parse(localStorage.getItem('clickedMailtoLinks') || '[]');",
+        "  clickedLinks.forEach(linkId => {",
+        "    const element = document.querySelector(`[data-link-id='${linkId}']`);",
+        "    if (element) {",
+        "      element.classList.add('clicked');",
+        "    }",
+        "  });",
+        "}",
+        "",
+        "window.onload = restoreClickedState;",
+        "</script>",
+        "</head>",
         "<body>",
         "<h1>Mailto Links</h1>",
         "<ul>",
     ]
 
-    for contact in contacts:
+    for i, contact in enumerate(contacts):
         name = contact["name"]
         email = contact["email"]
 
@@ -174,7 +205,14 @@ Examples:
         mailto_link = generate_mailto(
             email, args.subject, personalized_message, cc_list, args.html_body
         )
-        html_lines.append(f'<li>{name}: <a href="{mailto_link}">{email}</a></li>')
+        
+        # Create unique ID for each link
+        link_id = f"mailto-{i}-{email.replace('@', '-at-').replace('.', '-dot-')}"
+        
+        html_lines.append(
+            f'<li class="mailto-item" data-link-id="{link_id}" onclick="markClicked(this)">'
+            f'{name}: <a href="{mailto_link}">{email}</a></li>'
+        )
 
     html_lines += ["</ul>", "</body>", "</html>"]
 
