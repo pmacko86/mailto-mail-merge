@@ -33,6 +33,7 @@ Generate personalized `mailto:` links for a list of contacts using a message tem
     ```
 
 4. **View the generated HTML file**
+
     The output file will contain `mailto:` links for each contact.
 
 5. **Use HTML body (optional)**
